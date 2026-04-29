@@ -12,7 +12,13 @@ export default function Login() {
   const [stars, setStars] = useState([]);
   const [coffees, setCoffees] = useState([]);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const generatedStars = Array.from({ length: 30 }, (_, i) => ({

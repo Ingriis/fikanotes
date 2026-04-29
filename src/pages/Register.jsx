@@ -13,7 +13,13 @@ export default function Register() {
   const [stars, setStars] = useState([]);
   const [coffees, setCoffees] = useState([]);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const generatedStars = Array.from({ length: 35 }, (_, i) => ({

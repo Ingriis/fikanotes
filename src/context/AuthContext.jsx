@@ -18,6 +18,9 @@ export function AuthProvider({ children }) {
       } else {
         setLoading(false);
       }
+    }).catch(error => {
+      console.error("Error getting session:", error);
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -65,9 +68,15 @@ export function AuthProvider({ children }) {
     if (error) throw error;
 
     if (data.user) {
-      await supabase.from('profiles').insert([
+      const { error: profileError } = await supabase.from('profiles').insert([
         { id: data.user.id, email: data.user.email, full_name: fullName }
       ]);
+      
+      if (profileError) {
+        console.error("Error inserting profile:", profileError);
+        // Opcionalmente lanzar el error para que se vea en la UI:
+        // throw new Error(`Error de base de datos: ${profileError.message}`);
+      }
     }
 
     return data;

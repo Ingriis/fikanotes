@@ -33,7 +33,8 @@ export default function NoteEditor() {
   }, [isExpanded, title, content, color]);
 
   const handleSave = async () => {
-    if (title.trim() || content.trim()) {
+    const plainContent = content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, '').trim();
+    if (title.trim() || plainContent) {
       try {
         await addNote({ title, content, color });
       } catch (error) {
@@ -118,6 +119,7 @@ export default function NoteEditor() {
               
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={handleSave}
                   className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-md transition-colors text-sm"
                 >
