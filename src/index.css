@@ -147,4 +147,31 @@
   .hover-glow:hover {
     animation: glow 1s ease-in-out infinite;
   }
+
+  /* Estilos para Texto Enriquecido (Prose) */
+  .prose ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  .prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .prose b, .prose strong {
+    font-weight: 700;
+  }
+  .prose i, .prose em {
+    font-style: italic;
+  }
+  .prose u {
+    text-decoration: underline;
+  }
+  .prose strike, .prose s {
+    text-decoration: line-through;
+  }
 }

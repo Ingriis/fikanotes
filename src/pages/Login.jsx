@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { LogIn, Mail, Lock, Coffee, Sparkles, Heart, Star } from 'lucide-react';
 
 export default function Login() {
@@ -39,11 +40,16 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      navigate('/');
+      const { user, session, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      
+      // Esperamos un segundo para asegurar que onAuthStateChange haya actualizado el contexto global
+      setTimeout(() => {
+        setLoading(false);
+        navigate('/');
+      }, 1000);
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
-    } finally {
       setLoading(false);
     }
   };
@@ -188,6 +194,10 @@ export default function Login() {
             ✨ Cada nota es un pequeño recuerdo ✨
             <Coffee size={10} className="text-yellow-500" />
           </p>
+        </div>
+        {/* Debug info - Remove later */}
+        <div className="mt-8 text-center text-xs text-gray-400">
+          Conectado a: {import.meta.env.VITE_SUPABASE_URL?.substring(0, 30)}...
         </div>
       </div>
     </div>
