@@ -1,10 +1,10 @@
 import { useNotes } from '../context/NotesContext';
-import NoteCard from '../components/NoteCard';
+import NotesGrid from '../components/NotesGrid';
 import { Loader2 } from 'lucide-react';
 
 export default function Archive() {
-  const { notes, loading } = useNotes();
-  const archivedNotes = notes.filter(n => n.is_archived && !n.is_trashed);
+  const { notes, loading, filteredBySearch } = useNotes();
+  const archivedNotes = filteredBySearch(notes.filter(n => n.is_archived && !n.is_trashed));
 
   if (loading) {
     return (
@@ -25,14 +25,7 @@ export default function Archive() {
         </div>
       ) : (
         <div className="w-full">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 pl-2">
-            ARCHIVO
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {archivedNotes.map((note) => (
-              <NoteCard key={note.id} note={note} />
-            ))}
-          </div>
+          <NotesGrid notes={archivedNotes} title="ARCHIVO" />
         </div>
       )}
     </div>

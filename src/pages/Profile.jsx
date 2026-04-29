@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, LogOut, Save, Camera, Coffee, Heart } from 'lucide-react';
+import { User, Mail, LogOut, Save, Coffee, Heart } from 'lucide-react';
 
 export default function Profile() {
   const { user, profile, updateProfile, signOut } = useAuth();
@@ -19,7 +19,7 @@ export default function Profile() {
       await updateProfile({ full_name: fullName });
       setMessage('✨ Perfil actualizado con éxito');
       setTimeout(() => setMessage(''), 3000);
-    } catch (error) {
+    } catch {
       setMessage('❌ Error al actualizar');
     } finally {
       setSaving(false);

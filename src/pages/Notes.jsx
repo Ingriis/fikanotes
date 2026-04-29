@@ -1,13 +1,13 @@
 import { useNotes } from '../context/NotesContext';
 import NoteEditor from '../components/NoteEditor';
-import NoteCard from '../components/NoteCard';
+import NotesGrid from '../components/NotesGrid';
 import { Loader2 } from 'lucide-react';
 
 export default function Notes() {
-  const { notes, loading } = useNotes();
+  const { notes, loading, filteredBySearch, searchQuery } = useNotes();
 
   // Filtramos las notas que no están en la papelera ni archivadas
-  const activeNotes = notes.filter(n => !n.is_trashed && !n.is_archived);
+  const activeNotes = filteredBySearch(notes.filter(n => !n.is_trashed && !n.is_archived));
   
   const pinnedNotes = activeNotes.filter(n => n.is_pinned);
   const otherNotes = activeNotes.filter(n => !n.is_pinned);
@@ -30,37 +30,14 @@ export default function Notes() {
             <span className="text-4xl">📝</span>
           </div>
           <p className="text-lg font-medium text-gray-500">Tus notas aparecerán aquí</p>
-          <p className="text-sm mt-2 text-gray-400">Añade una nota para empezar</p>
+          <p className="text-sm mt-2 text-gray-400">
+            {searchQuery ? 'No hay coincidencias con tu búsqueda' : 'Añade una nota para empezar'}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-8 w-full">
-          {pinnedNotes.length > 0 && (
-            <div>
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 pl-2">
-                FIJADAS
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {pinnedNotes.map((note) => (
-                  <NoteCard key={note.id} note={note} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {otherNotes.length > 0 && (
-            <div>
-              {pinnedNotes.length > 0 && (
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 pl-2">
-                  OTRAS
-                </h2>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {otherNotes.map((note) => (
-                  <NoteCard key={note.id} note={note} />
-                ))}
-              </div>
-            </div>
-          )}
+          <NotesGrid notes={pinnedNotes} title="FIJADAS" />
+          <NotesGrid notes={otherNotes} title={pinnedNotes.length > 0 ? 'OTRAS' : undefined} />
         </div>
       )}
     </div>

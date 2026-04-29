@@ -1,10 +1,10 @@
 import { useNotes } from '../context/NotesContext';
-import NoteCard from '../components/NoteCard';
+import NotesGrid from '../components/NotesGrid';
 import { Loader2 } from 'lucide-react';
 
 export default function Trash() {
-  const { notes, loading } = useNotes();
-  const trashedNotes = notes.filter(n => n.is_trashed);
+  const { notes, loading, filteredBySearch } = useNotes();
+  const trashedNotes = filteredBySearch(notes.filter(n => n.is_trashed));
 
   if (loading) {
     return (
@@ -29,11 +29,7 @@ export default function Trash() {
         </div>
       ) : (
         <div className="w-full">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {trashedNotes.map((note) => (
-              <NoteCard key={note.id} note={note} />
-            ))}
-          </div>
+          <NotesGrid notes={trashedNotes} />
         </div>
       )}
     </div>

@@ -1,9 +1,16 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useRef, useEffect } from 'react';
-import { Palette, X } from 'lucide-react';
+import { Palette, Bell, Tag, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useNotes } from '../context/NotesContext';
 import { NOTE_COLORS } from '../lib/constants';
 import RichTextEditor from './RichTextEditor';
+
+const extractHashtags = (value = '') =>
+  [...value.matchAll(/#([\p{L}\p{N}_-]+)/gu)].map((match) => match[1]);
+
+const stripHtml = (value = '') =>
+  value.replace(/<[^>]*>?/gm, ' ').replace(/&nbsp;/g, ' ');
 
 export default function NoteEditor() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -11,9 +18,49 @@ export default function NoteEditor() {
   const [content, setContent] = useState('');
   const [color, setColor] = useState('bg-white');
   const [showPalette, setShowPalette] = useState(false);
+  const [showLabelInput, setShowLabelInput] = useState(false);
+  const [showReminderInput, setShowReminderInput] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [labels, setLabels] = useState([]);
+  const [reminderAt, setReminderAt] = useState('');
   
-  const { addNote } = useNotes();
+  const { addNote, normalizeLabels } = useNotes();
   const editorRef = useRef(null);
+
+  const handleSave = async () => {
+    const plainContent = stripHtml(content).trim();
+    const noteLabels = normalizeLabels([
+      ...labels,
+      ...extractHashtags(title),
+      ...extractHashtags(plainContent),
+    ]);
+
+    if (title.trim() || plainContent || noteLabels.length > 0) {
+      try {
+        await addNote({
+          title,
+          content,
+          color,
+          labels: noteLabels,
+          reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
+        });
+      } catch (error) {
+        console.error('Failed to add note', error);
+      }
+    }
+    
+    // Reset state
+    setIsExpanded(false);
+    setTitle('');
+    setContent('');
+    setColor('bg-white');
+    setShowPalette(false);
+    setShowLabelInput(false);
+    setShowReminderInput(false);
+    setNewLabel('');
+    setLabels([]);
+    setReminderAt('');
+  };
 
   // Close editor when clicking outside
   useEffect(() => {
@@ -32,22 +79,13 @@ export default function NoteEditor() {
     };
   }, [isExpanded, title, content, color]);
 
-  const handleSave = async () => {
-    const plainContent = content.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, '').trim();
-    if (title.trim() || plainContent) {
-      try {
-        await addNote({ title, content, color });
-      } catch (error) {
-        console.error('Failed to add note', error);
-      }
-    }
-    
-    // Reset state
-    setIsExpanded(false);
-    setTitle('');
-    setContent('');
-    setColor('bg-white');
-    setShowPalette(false);
+  const handleAddLabel = (event) => {
+    event.preventDefault();
+    const nextLabel = newLabel.replace(/^#/, '').trim();
+    if (!nextLabel) return;
+
+    setLabels(normalizeLabels([...labels, nextLabel]));
+    setNewLabel('');
   };
 
   return (
@@ -83,12 +121,43 @@ export default function NoteEditor() {
               onChange={setContent} 
               placeholder="Añade una nota..." 
             />
+
+            {(labels.length > 0 || reminderAt) && (
+              <div className="flex flex-wrap items-center gap-2">
+                {labels.map((label) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2 py-1 text-xs font-medium text-gray-700 border border-gray-200"
+                  >
+                    #{label}
+                    <button
+                      type="button"
+                      onClick={() => setLabels(labels.filter((item) => item !== label))}
+                      className="text-gray-400 hover:text-red-500"
+                      title="Quitar etiqueta"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                {reminderAt && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 border border-yellow-200">
+                    <Bell size={12} />
+                    {new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(reminderAt))}
+                  </span>
+                )}
+              </div>
+            )}
             
             <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 border-opacity-50">
-              <div className="relative">
+              <div className="relative flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setShowPalette(!showPalette)}
+                  onClick={() => {
+                    setShowPalette(!showPalette);
+                    setShowLabelInput(false);
+                    setShowReminderInput(false);
+                  }}
                   className="p-2 rounded-full hover:bg-black/5 text-gray-600 transition-colors"
                   title="Cambiar color"
                 >
@@ -113,6 +182,77 @@ export default function NoteEditor() {
                         )}
                       />
                     ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLabelInput(!showLabelInput);
+                    setShowPalette(false);
+                    setShowReminderInput(false);
+                  }}
+                  className="p-2 rounded-full hover:bg-black/5 text-gray-600 transition-colors"
+                  title="Añadir etiqueta"
+                >
+                  <Tag size={18} />
+                </button>
+
+                {showLabelInput && (
+                  <form
+                    onSubmit={handleAddLabel}
+                    className="absolute top-10 left-0 z-20 flex w-64 gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-2xl"
+                  >
+                    <input
+                      type="text"
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      placeholder="#Universidad"
+                      className="min-w-0 flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-yellow-300"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-yellow-400 px-3 py-1.5 text-sm font-medium text-white hover:bg-yellow-500"
+                    >
+                      Añadir
+                    </button>
+                  </form>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReminderInput(!showReminderInput);
+                    setShowPalette(false);
+                    setShowLabelInput(false);
+                  }}
+                  className={clsx(
+                    'p-2 rounded-full hover:bg-black/5 transition-colors',
+                    reminderAt ? 'text-yellow-700' : 'text-gray-600'
+                  )}
+                  title="Añadir recordatorio"
+                >
+                  <Bell size={18} />
+                </button>
+
+                {showReminderInput && (
+                  <div className="absolute top-10 left-0 z-20 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-2xl">
+                    <input
+                      type="datetime-local"
+                      value={reminderAt}
+                      onChange={(e) => setReminderAt(e.target.value)}
+                      className="w-full rounded-lg border border-gray-200 px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-yellow-300"
+                    />
+                    {reminderAt && (
+                      <button
+                        type="button"
+                        onClick={() => setReminderAt('')}
+                        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
+                      >
+                        <X size={12} />
+                        Quitar recordatorio
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

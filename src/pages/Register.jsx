@@ -10,8 +10,24 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [stars, setStars] = useState([]);
-  const [coffees, setCoffees] = useState([]);
+  const [stars] = useState(() =>
+    Array.from({ length: 35 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 5,
+      size: Math.random() * 4 + 1
+    }))
+  );
+  const [coffees] = useState(() =>
+    Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 6,
+      size: Math.random() * 25 + 15
+    }))
+  );
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
 
@@ -20,26 +36,6 @@ export default function Register() {
       navigate('/');
     }
   }, [user, navigate]);
-
-  useEffect(() => {
-    const generatedStars = Array.from({ length: 35 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 5,
-      size: Math.random() * 4 + 1
-    }));
-    setStars(generatedStars);
-
-    const generatedCoffees = Array.from({ length: 10 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 6,
-      size: Math.random() * 25 + 15
-    }));
-    setCoffees(generatedCoffees);
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

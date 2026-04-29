@@ -1,7 +1,7 @@
 import { Lightbulb, Bell, Tag, Archive, Trash2, Sparkles, Coffee } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const navItems = [
   { icon: Lightbulb, label: 'Notas', path: '/', emoji: '📝' },
@@ -12,18 +12,15 @@ const navItems = [
 ];
 
 export default function Sidebar({ isOpen }) {
-  const [coffees, setCoffees] = useState([]);
-
-  useEffect(() => {
-    const coffeeCups = Array.from({ length: 6 }, (_, i) => ({
+  const [coffees] = useState(() =>
+    Array.from({ length: 6 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       top: Math.random() * 100,
       delay: Math.random() * 5,
       size: Math.random() * 20 + 15
-    }));
-    setCoffees(coffeeCups);
-  }, []);
+    }))
+  );
 
   return (
     <aside

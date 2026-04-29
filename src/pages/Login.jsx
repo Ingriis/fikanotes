@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
 import { LogIn, Mail, Lock, Coffee, Sparkles, Heart, Star } from 'lucide-react';
 
 export default function Login() {
@@ -9,8 +8,24 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [stars, setStars] = useState([]);
-  const [coffees, setCoffees] = useState([]);
+  const [stars] = useState(() =>
+    Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 5,
+      size: Math.random() * 4 + 1
+    }))
+  );
+  const [coffees] = useState(() =>
+    Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 6,
+      size: Math.random() * 25 + 20
+    }))
+  );
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
 
@@ -20,34 +35,13 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const generatedStars = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 5,
-      size: Math.random() * 4 + 1
-    }));
-    setStars(generatedStars);
-
-    const generatedCoffees = Array.from({ length: 8 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      delay: Math.random() * 6,
-      size: Math.random() * 25 + 20
-    }));
-    setCoffees(generatedCoffees);
-  }, []);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const { user, session, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      await signIn(email, password);
       
       // Esperamos un segundo para asegurar que onAuthStateChange haya actualizado el contexto global
       setTimeout(() => {

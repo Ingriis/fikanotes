@@ -1,9 +1,21 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useRef, useEffect } from 'react';
 import { Bold, Italic, Underline, Strikethrough, List, Image as ImageIcon } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 export default function RichTextEditor({ content, onChange, placeholder = "Añade una nota..." }) {
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
+  const { user } = useAuth();
 
   // Set initial content only once when mounting if it's not empty, 
   // to avoid jumping cursor issues in contentEditable
@@ -25,40 +37,63 @@ export default function RichTextEditor({ content, onChange, placeholder = "Añad
     handleInput();
   };
 
-  const handleImageUpload = (e) => {
+  const insertImage = (src) => {
+    const imgHtml = `
+      <div class="image-container" contenteditable="false" style="position: relative; display: inline-block; width: 30%; margin: 8px 4px; vertical-align: top;">
+        <img src="${src}" style="width: 100%; height: auto; border-radius: 8px; display: block;" />
+        <div data-action="delete-image" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background-color: rgba(0,0,0,0.6); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: sans-serif; font-weight: bold; font-size: 12px; line-height: 1; z-index: 10; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+          ✕
+        </div>
+      </div>&nbsp;
+    `;
+
+    if (!editorRef.current) return;
+
+    editorRef.current.insertAdjacentHTML('beforeend', imgHtml);
+    editorRef.current.focus();
+    handleInput();
+  };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Límite de seguridad: 1MB máximo por imagen para evitar colapsos en la base de datos
-    if (file.size > 1024 * 1024) {
-      alert('⚠️ La imagen es demasiado pesada (Máximo 1MB). Por favor, intenta con una imagen más ligera o comprimida.');
+    if (!user?.id) {
+      alert('Inicia sesión para subir imágenes.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64String = event.target.result;
-      
-      // Creamos una estructura HTML con la imagen y un botón 'X' posicionado
-      // Al cambiar el ancho al 30%, las imágenes consecutivas se acomodarán una al lado de la otra automáticamente
-      const imgHtml = `
-        <div class="image-container" contenteditable="false" style="position: relative; display: inline-block; width: 30%; margin: 8px 4px; vertical-align: top;">
-          <img src="${base64String}" style="width: 100%; height: auto; border-radius: 8px; display: block;" />
-          <div data-action="delete-image" style="position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background-color: rgba(0,0,0,0.6); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-family: sans-serif; font-weight: bold; font-size: 12px; line-height: 1; z-index: 10; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-            ✕
-          </div>
-        </div>&nbsp;
-      `;
-      
-      // Insertamos el HTML personalizado
-      execCommand('insertHTML', imgHtml);
-    };
-    reader.readAsDataURL(file);
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (file.size > 5 * 1024 * 1024) {
+      alert('La imagen es demasiado pesada. Intenta con una imagen menor a 5MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const safeName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+    const path = `${user.id}/${safeName}`;
+
+    try {
+      const { error } = await supabase.storage
+        .from('note-images')
+        .upload(path, file, {
+          cacheControl: '31536000',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data } = supabase.storage.from('note-images').getPublicUrl(path);
+      insertImage(data.publicUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      const dataUrl = await fileToDataUrl(file);
+      insertImage(dataUrl);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -125,6 +160,22 @@ export default function RichTextEditor({ content, onChange, placeholder = "Añad
         >
           <List size={16} />
         </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+          className="p-1.5 text-gray-700 hover:bg-black/10 rounded-md transition-colors"
+          title="Subir imagen"
+        >
+          <ImageIcon size={16} />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
       </div>
 
       {/* Editor Area */}

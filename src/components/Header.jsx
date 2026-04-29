@@ -1,9 +1,24 @@
-import { Menu, Search, Settings, RefreshCcw, LayoutGrid, Coffee, Heart } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Search, Settings, RefreshCcw, LayoutGrid, List, Coffee, Heart, Moon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotes } from '../context/NotesContext';
 
 export default function Header({ toggleSidebar }) {
   const { profile } = useAuth();
+  const {
+    searchQuery,
+    setSearchQuery,
+    viewMode,
+    setViewMode,
+    fetchNotes,
+    supportsMetadata,
+  } = useNotes();
+  const [showSettings, setShowSettings] = useState(false);
+
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'grid' ? 'list' : 'grid');
+  };
 
   return (
     <header className="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
@@ -31,21 +46,59 @@ export default function Header({ toggleSidebar }) {
           <input
             type="text"
             placeholder="Buscar notas..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
             className="w-full bg-transparent outline-none text-gray-700 placeholder-gray-400"
           />
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group">
+        <button
+          onClick={fetchNotes}
+          className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group"
+          title="Actualizar notas"
+        >
           <RefreshCcw size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-spin-slow" />
         </button>
-        <button className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group">
-          <LayoutGrid size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-pulse" />
+        <button
+          onClick={toggleViewMode}
+          className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group"
+          title={viewMode === 'grid' ? 'Cambiar a lista' : 'Cambiar a cuadrícula'}
+        >
+          {viewMode === 'grid' ? (
+            <List size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-pulse" />
+          ) : (
+            <LayoutGrid size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-pulse" />
+          )}
         </button>
-        <button className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group">
-          <Settings size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-wiggle" />
-        </button>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-2 rounded-full hover:bg-yellow-50 transition-all transform hover:scale-110 group"
+            title="Configuración"
+          >
+            <Settings size={20} className="text-gray-500 group-hover:text-yellow-500 group-hover:animate-wiggle" />
+          </button>
+
+          {showSettings && (
+            <div className="absolute right-0 top-11 w-72 rounded-xl border border-gray-200 bg-white p-3 shadow-2xl">
+              <div className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-gray-600">
+                <span className="inline-flex items-center gap-2">
+                  <Moon size={16} />
+                  Modo oscuro
+                </span>
+                <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-400">Próximamente</span>
+              </div>
+              <div className="mt-2 rounded-lg bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+                {supportsMetadata
+                  ? 'Etiquetas y recordatorios conectados.'
+                  : 'Agrega las columnas de Supabase para guardar etiquetas y recordatorios.'}
+              </div>
+            </div>
+          )}
+        </div>
         
         <Link 
           to="/profile" 
